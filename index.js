@@ -36,33 +36,31 @@ function rtspRequestHandle(ws, req) {
     );
     let url = req.query.url;
 
-    console.log("url:", url);
-
-    // console.log("rtsp url:", url);
-    // console.log("rtsp params:", req.params);
-
     try {
         ffmpeg(url)
             .addInputOption("-rtsp_transport", "tcp", "-buffer_size", "102400")
             .on("start", function () {
-                console.log("Stream started.");
+                console.log("--------------------------------------------");
+                console.log("开始处理：");
+                console.log("url", url);
             })
             .on("codecData", function () {
-                console.log("Stream codecData.");
-                // 摄像机在线处理
+                // console.log("Stream codecData.");
             })
             .on("error", function (err) {
+                console.log("--------------------------------------------");
+                console.log("出错了：", err.message);
+                console.log("url", url);
+
                 // if (poct == "udp") {
                 //     poct = "tcp";
                 //     rtspRequestHandle(ws, req);
                 // }
 
-                console.log("报错了：", err.message);
-
                 // console.log(url, "An error occured: ", err.message);
             })
             .on("end", function () {
-                console.log("Stream end!");
+                // console.log("Stream end!");
                 // 摄像机断线的处理
             })
             .outputFormat("flv")
