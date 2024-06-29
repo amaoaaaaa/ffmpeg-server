@@ -40,7 +40,7 @@ function rtspRequestHandle(ws, req) {
         ffmpeg(url)
             .addInputOption("-rtsp_transport", "tcp", "-buffer_size", "102400")
             .on("start", function () {
-                console.log("--------------------------------------------");
+                logDivider();
                 console.log("开始处理：");
                 console.log("url", url);
             })
@@ -48,8 +48,8 @@ function rtspRequestHandle(ws, req) {
                 // console.log("Stream codecData.");
             })
             .on("error", function (err) {
-                console.log("--------------------------------------------");
-                console.log("出错了：", err.message);
+                logDivider();
+                console.log("！！！出错了：", err.message);
                 console.log("url", url);
 
                 // if (poct == "udp") {
@@ -74,6 +74,15 @@ function rtspRequestHandle(ws, req) {
         // }
         console.log("catch (error) ", error);
     }
+}
+
+/**
+ * 在控制台输出分割线
+ */
+function logDivider() {
+    console.log("");
+    console.log("--------------------------------------------------------------");
+    console.log("");
 }
 
 localServer();
