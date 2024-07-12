@@ -49,7 +49,7 @@ function rtspRequestHandle(ws, req) {
                 console.log("！！！出错了：", err.message);
                 console.log("url", url);
             })
-            .outputOptions("-c:v", "libx264") // 输出 H264 编码
+            .outputOptions("-c:v", "libx264", "-b:v", "2000k", "-r", "24", "-preset", "veryfast")
             .outputFormat("flv")
             .videoCodec("copy")
             .noAudio()
