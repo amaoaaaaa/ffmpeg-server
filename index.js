@@ -21,8 +21,12 @@ function localServer() {
     console.log("服务已启动在端口：6183");
 }
 
+/**
+ * 处理转码
+ * @param {*} ws
+ * @param {import('express').Request} req
+ */
 function rtspRequestHandle(ws, req) {
-    const url = req.query.url;
     const stream = webSocketStream(
         ws,
         {
@@ -34,24 +38,51 @@ function rtspRequestHandle(ws, req) {
         }
     );
 
+    const url = req.query.url;
+
+    // 从请求参数设置输出的分辨率，-1 为自动计算，如果宽高都是 -1，则不设置 scale
+    const width = req.query.width || "-1";
+    const height = req.query.height || "-1";
+    const scale = `${width}:${height}` === "-1:-1" ? [] : ["-vf", `scale=${width}:${height}`];
+
+    /**
+     * 输出的比特率，默认：2000k
+     */
+    const bitRate = req.query.bitRate || "2000k";
+
     try {
         ffmpeg(url)
             .addInputOption("-rtsp_transport", "tcp", "-buffer_size", "102400")
             .on("start", function () {
                 logDivider();
-                console.log("开始转码：");
-                console.log("url", url);
+
+                console.log("开始转码：", url);
+                console.log(
+                    "输出分辨率：",
+                    !scale.length
+                        ? "自动"
+                        : `${width.replace("-1", "自动")}x${height.replace("-1", "自动")}`
+                );
+                console.log("输出码率：", bitRate);
             })
             .on("error", function (err) {
-                if (err.message === "Output stream closed") return;
-
                 logDivider();
+
+                if (err.message === "Output stream closed") {
+                    console.log("断开连接：", url);
+                    return;
+                }
+
                 console.log("！！！出错了：", err.message);
                 console.log("url", url);
             })
-            .outputOptions("-c:v", "libx264", "-b:v", "2000k", "-r", "24", "-preset", "veryfast")
+            // 设置视频编码器、比特率、帧率和预设
+            .outputOptions("-c:v", "libx264", "-b:v", bitRate, "-r", "24", "-preset", "veryfast")
+            // 设置视频分辨率
+            .outputOptions(scale)
+            // 设置输出格式
             .outputFormat("flv")
-            .videoCodec("copy")
+            // 禁用音频
             .noAudio()
             .pipe(stream);
     } catch (error) {
