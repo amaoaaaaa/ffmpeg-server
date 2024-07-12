@@ -63,6 +63,7 @@ function rtspRequestHandle(ws, req) {
                 // console.log("Stream end!");
                 // 摄像机断线的处理
             })
+            .outputOptions("-c:v", "libx264")
             .outputFormat("flv")
             .videoCodec("copy")
             .noAudio()
