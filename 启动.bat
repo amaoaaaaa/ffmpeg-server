@@ -1,0 +1,1 @@
+start cmd /K "node index.js"
