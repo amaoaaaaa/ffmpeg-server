@@ -1,1 +1,1 @@
-start cmd /K "node index.js"
+start cmd /K "npm run serve"

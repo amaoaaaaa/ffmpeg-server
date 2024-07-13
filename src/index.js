@@ -1,9 +1,11 @@
+const path = require("path");
 const express = require("express");
 const expressWebSocket = require("express-ws");
 const ffmpeg = require("fluent-ffmpeg");
 const webSocketStream = require("websocket-stream/stream");
 
-ffmpeg.setFfmpegPath("E:/tools/ffmpeg-master-latest-win64-gpl-shared/bin/ffmpeg");
+const ffmpegPath = path.join(__dirname, "../ffmpeg-master-latest-win64-gpl-shared/bin/ffmpeg");
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 function localServer() {
     const app = express();
