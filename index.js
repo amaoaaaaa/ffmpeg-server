@@ -38,11 +38,22 @@ function rtspRequestHandle(ws, req) {
         }
     );
 
+    /**
+     * 需要转码的 rtsp 地址
+     */
     const url = req.query.url;
 
-    // 从请求参数设置输出的分辨率，-1 为自动计算，如果宽高都是 -1，则不设置 scale
+    /**
+     * 输出的视频宽度
+     */
     const width = req.query.width || "-1";
+    /**
+     * 输出的视频高度
+     */
     const height = req.query.height || "-1";
+    /**
+     * 分辨率设置。从请求参数设置输出的分辨率，-1 为自动计算，如果宽高都是 -1，则不设置 scale
+     */
     const scale = `${width}:${height}` === "-1:-1" ? [] : ["-vf", `scale=${width}:${height}`];
 
     /**
@@ -78,7 +89,7 @@ function rtspRequestHandle(ws, req) {
             })
             // 设置视频编码器、比特率、帧率和预设
             .outputOptions("-c:v", "libx264", "-b:v", bitRate, "-r", "24", "-preset", "veryfast")
-            // 设置视频分辨率
+            // 设置输出视频分辨率
             .outputOptions(scale)
             // 设置输出格式
             .outputFormat("flv")
