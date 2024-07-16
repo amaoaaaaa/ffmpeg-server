@@ -177,7 +177,7 @@ module.exports = (app) => {
                         log.add("ffmpeg 报错：", err.message);
                     }
 
-                    log.add("关闭 WebSocket 连接", url);
+                    log.add("停止转码：", url);
 
                     logDivider();
                     log.echo();
@@ -185,10 +185,10 @@ module.exports = (app) => {
                 .pipe(stream);
         } catch (error) {
             log.add("处理 rtsp 转码出错：", error);
+            log.add("停止转码：", url);
 
             // 关闭 WebSocket 连接
             ws.close();
-            log.add("关闭 WebSocket 连接", url);
 
             logDivider();
             log.echo();
