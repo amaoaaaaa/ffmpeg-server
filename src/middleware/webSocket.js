@@ -172,12 +172,15 @@ module.exports = (app) => {
                 })
                 .on("error", function (err) {
                     if (err.message === "Output stream closed") {
-                        logDivider();
-                        console.log("断开连接：", url);
-                        return;
+                        log.add("输出流已关闭");
+                    } else {
+                        log.add("ffmpeg 报错：", err.message);
                     }
 
-                    throw new Error(err.message);
+                    log.add("关闭 WebSocket 连接", url);
+
+                    logDivider();
+                    log.echo();
                 })
                 .pipe(stream);
         } catch (error) {
