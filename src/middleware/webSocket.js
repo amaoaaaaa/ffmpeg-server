@@ -2,7 +2,7 @@ const path = require("path");
 const expressWebSocket = require("express-ws");
 const webSocketStream = require("websocket-stream/stream");
 const ffmpeg = require("fluent-ffmpeg");
-const { logDivider, toEven } = require("../utils");
+const { logDivider, toEven, Log } = require("../utils");
 
 const ffmpegPath = path.join(__dirname, "../../ffmpeg-master-latest-win64-gpl-shared/bin/ffmpeg");
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -12,7 +12,14 @@ ffmpeg.setFfmpegPath(ffmpegPath);
  * @param {String} rtspUrl - rtsp 地址
  * @param {Number} customizeWidth - 自定义宽度
  * @param {Number}  customizeHeight - 自定义高度
- * @returns {Promise<{width: Number; height: Number;}>} 缩放后的宽高
+ *
+ * @typedef {Object} ComputedScaleRes
+ * @property {Number} width - 缩放后的宽度
+ * @property {Number} height - 缩放后的高度
+ * @property {Number} sourceWidth - rtsp 视频宽度
+ * @property {Number} sourceHeight - rtsp 视频高度
+ *
+ * @returns {Promise<ComputedScaleRes>} 宽高的数值
  */
 const computedScale = async (rtspUrl, customizeWidth, customizeHeight) => {
     return new Promise((resolve, reject) => {
@@ -25,7 +32,6 @@ const computedScale = async (rtspUrl, customizeWidth, customizeHeight) => {
 
             const sourceWidth = videoStream.width;
             const sourceHeight = videoStream.height;
-            console.log("\n", "rtsp 分辨率:", sourceWidth, "x", sourceHeight, rtspUrl);
 
             // 未设置宽度，则计算宽度
             if (customizeWidth === -1) {
@@ -49,10 +55,12 @@ const computedScale = async (rtspUrl, customizeWidth, customizeHeight) => {
                 customizeHeight = Math.floor(customizeWidth / (sourceWidth / sourceHeight));
             }
 
-            // HACK 这里强行把奇数分辨率转成偶数，可能会导致一点点🤏的画面比例变形
             resolve({
+                // HACK 这里强行把奇数分辨率转成偶数，可能会导致一点点🤏的画面比例变形
                 width: toEven(customizeWidth),
                 height: toEven(customizeHeight),
+                sourceWidth,
+                sourceHeight,
             });
         });
     });
@@ -102,11 +110,12 @@ module.exports = (app) => {
      *         description: 输出视频的比特率。
      */
     app.ws("/rtsp/:id/", async (ws, req) => {
+        /** 简单的 console.log 输出管理 */
+        const log = new Log();
+
         const { url, bitrate } = req.query;
 
-        // FIX 并发执行的时候 log 输出有点乱
-        logDivider();
-        console.log("准备开始转码：", url);
+        log.add("准备开始转码：", url);
 
         /**
          * 输出选项
@@ -131,20 +140,21 @@ module.exports = (app) => {
             const scale = `${width} x ${height}`;
 
             if (scale !== "-1 x -1") {
-                console.log("\n", "自定义分辨率：", scale.replace(/-1/g, "自动"));
-
                 const newScale = await computedScale(url, Number(width), Number(height));
 
-                console.log("\n", "输出的分辨率：", newScale.width, "x", newScale.height);
-
                 outputOptions.push(["-vf", `scale=${newScale.width}:${newScale.height}`]);
+
+                const { sourceWidth, sourceHeight } = newScale;
+                log.add("rtsp 分辨率：", sourceWidth, "x", sourceHeight);
+                log.add("自定义分辨率：", scale.replace(/-1/g, "自动"));
+                log.add("输出的分辨率：", newScale.width, "x", newScale.height);
             } else {
-                console.log("\n", "输出的分辨率：", "自动");
+                log.add("输出的分辨率：", "自动");
             }
 
             // 设置比特率
             bitrate && outputOptions.push(["-b:v", bitrate]);
-            console.log("\n", "输出的比特率：", bitrate || "自动");
+            log.add("输出的比特率：", bitrate || "自动");
 
             const stream = webSocketStream(ws, {
                 binary: true,
@@ -155,7 +165,10 @@ module.exports = (app) => {
                 .addInputOption("-rtsp_transport", "tcp", "-buffer_size", "102400")
                 .outputOptions(outputOptions.flat())
                 .on("start", function () {
-                    console.log("\n", "开始转码...");
+                    log.add("开始转码...");
+
+                    logDivider();
+                    log.echo();
                 })
                 .on("error", function (err) {
                     if (err.message === "Output stream closed") {
@@ -168,13 +181,14 @@ module.exports = (app) => {
                 })
                 .pipe(stream);
         } catch (error) {
-            logDivider();
-            console.log("处理 rtsp 转码出错：", error);
+            log.add("处理 rtsp 转码出错：", error);
 
             // 关闭 WebSocket 连接
             ws.close();
+            log.add("关闭 WebSocket 连接", url);
 
-            console.log("\n", "关闭 WebSocket 连接", url);
+            logDivider();
+            log.echo();
         }
     });
 };

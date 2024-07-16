@@ -20,7 +20,34 @@ const toEven = (num) => {
     return num;
 };
 
+/**
+ * 简单的 console.log 输出管理
+ */
+class Log {
+    constructor() {
+        this.logs = [];
+    }
+
+    /**
+     * 添加一行 log
+     * @param  {...any} p 内容
+     */
+    add(...p) {
+        this.logs.push(p.join(" "));
+    }
+
+    /**
+     * 输出到控制台
+     */
+    echo() {
+        console.log(this.logs.join("\n\n"));
+
+        this.logs.length = 0;
+    }
+}
+
 module.exports = {
     logDivider,
     toEven,
+    Log,
 };
