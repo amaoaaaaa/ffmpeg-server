@@ -110,6 +110,8 @@ module.exports = (app) => {
      *         description: 输出视频的比特率。
      */
     app.ws("/rtsp/:id/", async (ws, req) => {
+        const wsStateText = ["正在连接", "已连接", "正在关闭", "已关闭"];
+
         /** 简单的 console.log 输出管理 */
         const log = new Log();
 
@@ -165,7 +167,11 @@ module.exports = (app) => {
                 .addInputOption("-rtsp_transport", "tcp", "-buffer_size", "102400")
                 .outputOptions(outputOptions.flat())
                 .on("start", function () {
-                    log.add("开始转码...");
+                    if (ws.readyState === 1) {
+                        log.add("开始转码...");
+                    } else {
+                        log.add(wsStateText[ws.readyState]);
+                    }
 
                     logDivider();
                     log.echo();
