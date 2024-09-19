@@ -175,6 +175,9 @@ module.exports = (app) => {
 
                     logDivider();
                     log.echo();
+
+                    // 开始转码时，WebSocket 已断开，则强制关闭当前转码进程
+                    if (stream.socket.readyState > 1) this.kill("SIGKILL");
                 })
                 .on("error", function (err) {
                     if (err.message === "Output stream closed") {
@@ -187,6 +190,9 @@ module.exports = (app) => {
 
                     logDivider();
                     log.echo();
+
+                    // 强制关闭当前转码进程
+                    this.kill("SIGKILL");
                 })
                 .pipe(stream);
         } catch (error) {
